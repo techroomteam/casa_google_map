@@ -1,0 +1,1 @@
+enum CasaMapViewType { driver, customer }
