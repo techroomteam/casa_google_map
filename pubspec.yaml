@@ -1,7 +1,7 @@
 name: casa_google_map
 description: A new Flutter package project.
 version: 0.0.1
-# homepage:
+homepage: https://github.com/techroomteam/casa_google_map
 
 environment:
   sdk: ">=2.17.1 <3.0.0"
@@ -16,12 +16,7 @@ dependencies:
   flutter_compass: ^0.6.1
   geolocator: ^8.2.1
   url_launcher: ^6.0.20
-  flutter_background_service: ^2.1.2
-  flutter_background_service_ios: ^2.1.0
-  flutter_background_service_android: ^2.0.2
-  flutter_animarker:
-    git:
-      url: https://github.com/techroomteam/flutter_animarker.git
+  google_map_marker_animation: ^0.0.1
 
 dev_dependencies:
   flutter_test:

@@ -1,8 +1,6 @@
 import 'dart:async';
-
 import 'package:casa_google_map/casa_google_map.dart';
 import 'package:example/screens/freelancer_screen.dart';
-import 'package:example/screens/renter_screen.dart';
 import 'package:example/services/firestore_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -25,41 +23,9 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const CasaMapFreelancerExample(),
-      // home: const CasaMapRenterExample(),
     );
   }
 }
-
-// Future<void> startBackgroundTracking() async {
-//   final fBservice = FlutterBackgroundService();
-//   debugPrint("startBackgroundTracking1");
-//   WidgetsFlutterBinding.ensureInitialized();
-//   debugPrint("startBackgroundTracking2");
-//   await fBservice.configure(
-//     androidConfiguration: AndroidConfiguration(
-//       // this will executed when app is in foreground or background in separated isolate
-//       onStart: startBackgroundService,
-//       // auto start service
-//       autoStart: true,
-//       isForegroundMode: true,
-//     ),
-//     iosConfiguration: IosConfiguration(
-//       // auto start service
-//       autoStart: true,
-//       // this will executed when app is in foreground in separated isolate
-//       onForeground: startBackgroundService,
-//       // you have to enable background fetch capability on xcode project
-//       onBackground: onIosBackground,
-//     ),
-//   );
-//   await fBservice.startService();
-// }
-
-// bool onIosBackground(ServiceInstance service) {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   // debugPrint('FLUTTER BACKGROUND FETCH');
-//   return true;
-// }
 
 void startBackgroundService(ServiceInstance service) {
   debugPrint("_startBackgroundService");

@@ -1,13 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:casa_google_map/casa_google_map.dart';
-import 'package:casa_google_map/src/service/background_service.dart';
 import 'package:casa_google_map/src/service/permission_service.dart';
 import 'package:casa_google_map/src/util/constant.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animarker/core/ripple_marker.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:google_map_marker_animation/core/ripple_marker.dart';
 import 'package:maps_toolkit/maps_toolkit.dart' as mapTolkit;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -108,7 +107,7 @@ class CasaMapService {
     mapControllerCompleter.complete(controller);
     _mapController = controller;
 
-    _centerPolyline();
+    if (_driverLatLng != null) _centerPolyline();
   }
 
   /// Whether to show the driver marker at [_driverLatLng].
@@ -149,7 +148,6 @@ class CasaMapService {
 
   // services
   final PermissionService _permissionService = PermissionService();
-  final BackgroundService _bgService = BackgroundService();
 
   /// setting source and destination markers
   void _setSourceDestinationMarkers() async {
@@ -193,8 +191,17 @@ class CasaMapService {
   /// Build polylines from [_sourceLatLng] to [_destinationLatLng].
   ///
   /// If already have a polyline then first clear it
-  Future<void> _buildPolyLines(
-      {bool ignoreMapType = false, CasaPosition? casaPosition}) async {
+  ///
+  /// If [CasaMapViewType.driver] then this method will draw polyline between [_driverLatLng] and [_destinationLatLng]
+  ///
+  /// If [CasaMapViewType.customer] then this method will draw polyline with help of [CasaPosition.route]
+  ///
+  /// In case of customer we don't need to reroute, we can store driver side data in firebase and display polyline with help of that data
+  Future<void> _buildPolyLines({
+    ///
+    bool ignoreMapType = false,
+    CasaPosition? casaPosition,
+  }) async {
     // clear coordinates
     polylineCoordinates.clear();
     mapTolkitPolylineCoordinates.clear();
@@ -226,7 +233,6 @@ class CasaMapService {
       );
 
       debugPrint("Inside build polylines3");
-
       debugPrint("Result Points:${result.points}");
 
       if (result.points.isNotEmpty) {
@@ -324,13 +330,12 @@ class CasaMapService {
         }
       } else {
         newDriverLocation = casaPos.driverLatLng;
-        // if (shouldCenterPolyline) {
-        //   await centerPolyline();
-        //   shouldCenterPolyline = false;
-        // } else {
-        //   await _buildPolyLines(casaPosition: casaPos, ignoreMapType: true);
-        // }
-        await _buildPolyLines(casaPosition: casaPos);
+        await _buildPolyLines(casaPosition: casaPos, ignoreMapType: true);
+
+        if (shouldCenterPolyline) {
+          shouldCenterPolyline = false;
+          await _centerPolyline();
+        }
       }
 
       debugPrint("isLocationOnPath: $isLocationOnPath");
@@ -423,9 +428,9 @@ class CasaMapService {
     LatLng? sourceLatLng,
     required LatLng? driverLatLng,
     required LatLng? destinationLatLng,
-    void Function(LatLng)? onTapSourceInfoWindow,
-    void Function(LatLng)? onTapDestinationInfoWindow,
-    void Function(LatLng)? onTapDriverInfoWindow,
+    // void Function(LatLng)? onTapSourceInfoWindow,
+    // void Function(LatLng)? onTapDestinationInfoWindow,
+    // void Function(LatLng)? onTapDriverInfoWindow,
     void Function(LatLng)? onTapSourceMarker,
     void Function(LatLng)? onTapDestinationMarker,
     void Function(LatLng)? onTapDriverMarker,
@@ -501,48 +506,50 @@ class CasaMapService {
 
   // Geolocator start
   /// This function will first if device have location permission if not then it will ask for permission
-  Future<Position> getCurrentPosition() async {
-    return _permissionService.determinePosition();
-  }
+  Future<Position> getCurrentPosition() async =>
+      _permissionService.determinePosition();
 
   ///
   Stream<Position> startListeningToDriverLocation(
-      {LocationSettings? locationSettings}) {
-    return _permissionService.startDriving(locationSettings: locationSettings);
-  }
+          {LocationSettings? locationSettings}) =>
+      _permissionService.startDriving(locationSettings: locationSettings);
+
   // Geolocator end
 
-  // background service start
-
-  Future<void> startBackgroundTracking() async {
-    _bgService.startBackgroundTracking(
-      listenDeviceLocation: () async {
-        debugPrint("***listenDeviceLocation***");
-        Position position = await getCurrentPosition();
-        // convert [Position] to [CasaPosition]
-        CasaPosition casaPosition = CasaPosition(
-            driverLatLng: LatLng(position.latitude, position.longitude),
-            destinationLatLng: _destinationLatLng!);
-        _onNewCasaPositionListner!(casaPosition);
-      },
-    );
-  }
-
-  Future<void> stopBackgroundTracking() async {
-    _bgService.stopBackgroundTracking();
-  }
-
-  // background service end
-
-  static openGoogleMapExternalApp(LatLng latLng) async {
-    var googleUrl =
-        'https://www.google.com/maps/search/?api=1&query=${latLng.latitude},${latLng.longitude}';
-    if (await canLaunchUrl(Uri(path: googleUrl))) {
-      await launchUrl(Uri(path: googleUrl));
-    } else {
-      throw 'Could not open the map.';
+  /// this method required destination [LatLng]
+  Future<void> openMapExternalApp({required LatLng destinationLatLng}) async {
+    String googleMapUrl =
+        'https://www.google.com/maps/search/?api=1&query=${destinationLatLng.latitude},${destinationLatLng.longitude}';
+    String appleMapUrl =
+        'https://maps.apple.com/?q=${destinationLatLng.latitude},${destinationLatLng.longitude}';
+    if (Platform.isAndroid) {
+      try {
+        if (await canLaunchUrl(Uri(path: googleMapUrl))) {
+          await launchUrl(Uri(path: googleMapUrl));
+        }
+      } catch (error) {
+        throw ("Cannot launch Google map");
+      }
+    }
+    if (Platform.isIOS) {
+      try {
+        if (await canLaunchUrl(Uri(path: appleMapUrl))) {
+          await launchUrl(Uri(path: appleMapUrl));
+        }
+      } catch (error) {
+        throw ("Cannot launch Apple map");
+      }
     }
   }
+
+  //   if (await canLaunchUrl(Uri(path: url))) {
+  //     await launchUrl(Uri(path: url));
+  //   } else if (await canLaunchUrl(Uri(path: urlAppleMaps))) {
+  //     await launchUrl(Uri(path: urlAppleMaps));
+  //   } else {
+  //     throw 'Could not launch $url';
+  //   }
+  // }
 
   // cetner polyline
   Future<void> _centerPolyline() async {

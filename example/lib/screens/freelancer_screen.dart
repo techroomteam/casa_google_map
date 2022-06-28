@@ -1,14 +1,11 @@
 import 'dart:async';
 import 'package:casa_google_map/casa_google_map.dart';
-import 'package:example/main.dart';
 import 'package:example/services/background_service.dart';
 import 'package:example/services/firestore_service.dart';
-import 'package:example/util/firebase_paths.dart';
 import 'package:example/util/util.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 
-LatLng destinationLatLng = const LatLng(33.659996, 73.062831);
+LatLng destinationLatLng = const LatLng(33.645062, 73.044726);
 
 class CasaMapFreelancerExample extends StatefulWidget {
   const CasaMapFreelancerExample({Key? key}) : super(key: key);
@@ -32,21 +29,22 @@ class _CasaMapFreelancerExampleState extends State<CasaMapFreelancerExample>
 
   CasaPosition? casaPosition;
 
-  bool startDiriving = false;
-
   // casamapservice
   CasaMapService casaMapService = CasaMapService();
   BackgroundService backgroundService = BackgroundService();
 
   int currentlocationIndex = 1;
   List<LatLng> predefinePath = [
-    LatLng(33.652915, 73.049155),
-    LatLng(33.652759, 73.049278),
-    LatLng(33.652856, 73.049466),
-    LatLng(33.653125, 73.049977),
-    LatLng(33.653344, 73.050405),
-    LatLng(33.653524, 73.050381),
+    LatLng(33.644988, 73.041464),
+    LatLng(33.643864, 73.042282),
+    LatLng(33.643058, 73.042910),
+    LatLng(33.643585, 73.044273),
+    LatLng(33.644087, 73.044030),
+    LatLng(33.644543, 73.044210),
+    LatLng(33.645062, 73.044726),
   ];
+
+  bool driverTrackingStarted = false;
 
   @override
   void initState() {
@@ -67,14 +65,15 @@ class _CasaMapFreelancerExampleState extends State<CasaMapFreelancerExample>
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.paused) {
       debugPrint("AppLifecycleState: $state");
-      // casaMapService.startBackgroundTracking();
-      backgroundService.startBackgroundTracking();
-      // startBackgroundTracking();
+      if (!driverTrackingStarted) {
+        backgroundService.startBackgroundTracking();
+      }
     }
     if (state == AppLifecycleState.resumed) {
       debugPrint("AppLifecycleState: $state");
-      // casaMapService.stopBackgroundTracking();
       backgroundService.stopBackgroundTracking();
+
+      driverTrackingStarted = false;
     }
   }
 
@@ -90,49 +89,51 @@ class _CasaMapFreelancerExampleState extends State<CasaMapFreelancerExample>
     return Scaffold(
       body: Stack(
         children: [
-          myPosition != null
-              ? CasaGoogleMap(
-                  apiKey: mapAPIKey,
-                  driverLatLng:
-                      LatLng(myPosition!.latitude, myPosition!.longitude),
-                  destinationLatLng: destinationLatLng,
-                  driverMarkerIcon: const CasaMarkerIcon(
-                      assetPath: kDefaultDriverMarkerAssetPath,
-                      assetMarkerSize: Size.square(80.0)),
-                  ///////////////////////////////////////////////////////
-                  //////////////    OPTIONAL PARAMETERS    //////////////
-                  ///////////////////////////////////////////////////////
-                  routeWidth: 2,
-                  driverCoordinatesStream: latlngStreamController.stream,
-                  onNewCasaPositionListner: (casaPosition) {
-                    this.casaPosition = casaPosition;
-                    debugPrint("onNewCasaPositionListner");
-                    FirestoreService.updateLocationInFirebase(casaPosition);
-                  },
-                )
-              : const PermissionDeniedView(),
+          CasaGoogleMap(
+            apiKey: mapAPIKey,
+            driverLatLng: myPosition != null
+                ? LatLng(myPosition!.latitude, myPosition!.longitude)
+                : null,
+            destinationLatLng: destinationLatLng,
+            driverMarkerIcon: const CasaMarkerIcon(
+                assetPath: kDefaultDriverMarkerAssetPath,
+                assetMarkerSize: Size.square(80.0)),
+            ///////////////////////////////////////////////////////
+            //////////////    OPTIONAL PARAMETERS    //////////////
+            ///////////////////////////////////////////////////////
+            routeWidth: 2,
+            driverCoordinatesStream: latlngStreamController.stream,
+            onNewCasaPositionListner: (casaPosition) {
+              this.casaPosition = casaPosition;
+              debugPrint("onNewCasaPositionListner");
+              FirestoreService.updateLocationInFirebase(casaPosition);
+            },
+          ),
           Positioned(
             bottom: 20.0,
             left: 24.0,
             right: 24.0,
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                casaPosition != null
-                    ? Text(
-                        'Latitude: ${casaPosition!.driverLatLng.latitude}, Longitude: ${casaPosition!.driverLatLng.longitude}')
-                    : const SizedBox(width: 0.0, height: 0.0),
-                myPosition != null
-                    ? Text(
-                        'Latitude: ${myPosition!.latitude}, Longitude: ${myPosition!.longitude}')
-                    : const SizedBox(width: 0.0, height: 0.0),
                 ElevatedButton(
-                  child: Text(
-                    !startDiriving
-                        ? "Start your journey"
-                        : "Reached to distination",
+                  child: const Text(
+                    "Start your journey",
+                    style: TextStyle(fontSize: 13),
                   ),
                   onPressed: () {
+                    driverTrackingStarted = true;
                     startListeningForDriverLocation();
+                  },
+                ),
+                ElevatedButton(
+                  child: const Text(
+                    "Open GoogleMap App",
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  onPressed: () {
+                    casaMapService.openMapExternalApp(
+                        destinationLatLng: destinationLatLng);
                   },
                 ),
               ],
@@ -144,29 +145,27 @@ class _CasaMapFreelancerExampleState extends State<CasaMapFreelancerExample>
   }
 
   startListeningForDriverLocation() {
-    // final casaPos = CasaPosition(
-    //   driverLatLng: predefinePath[currentlocationIndex],
-    //   destinationLatLng: destinationLatLng,
-    // );
-    // latlngStreamController.add(casaPos);
-    // currentlocationIndex += 1;
-    // setState(() {});
+    final casaPos = CasaPosition(
+      driverLatLng: predefinePath[currentlocationIndex],
+      destinationLatLng: destinationLatLng,
+    );
+    latlngStreamController.add(casaPos);
+    currentlocationIndex += 1;
+    setState(() {});
 
-    // updateLocationInFirebase(casaPos);
-
-    casaMapService
-        .startListeningToDriverLocation(
-            locationSettings: const LocationSettings(
-                distanceFilter: 20, accuracy: LocationAccuracy.high))
-        .listen((Position p) async {
-      final casaPos = CasaPosition(
-        driverLatLng: LatLng(p.latitude, p.longitude),
-        destinationLatLng: destinationLatLng,
-      );
-      latlngStreamController.add(casaPos);
-      myPosition = p;
-      setState(() {});
-    });
+    // casaMapService
+    //     .startListeningToDriverLocation(
+    //         locationSettings: const LocationSettings(
+    //             distanceFilter: 20, accuracy: LocationAccuracy.high))
+    //     .listen((Position p) async {
+    //   final casaPos = CasaPosition(
+    //     driverLatLng: LatLng(p.latitude, p.longitude),
+    //     destinationLatLng: destinationLatLng,
+    //   );
+    //   latlngStreamController.add(casaPos);
+    //   myPosition = p;
+    //   setState(() {});
+    // });
   }
 }
 

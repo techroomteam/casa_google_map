@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:casa_google_map/casa_google_map.dart';
-import 'package:casa_google_map/src/service/casa_map_vm.dart';
 import 'package:casa_google_map/src/util/constant.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animarker/flutter_map_marker_animation.dart';
+import 'package:google_map_marker_animation/widgets/animarker.dart';
 
 /// A [CasaGoogleMap] which can be used to make polylines(route)
 /// from a source to a destination,
@@ -32,9 +31,9 @@ class CasaGoogleMap extends StatefulWidget {
     this.onTapSourceMarker,
     this.onTapDestinationMarker,
     this.onTapDriverMarker,
-    this.onTapSourceInfoWindow,
-    this.onTapDestinationInfoWindow,
-    this.onTapDriverInfoWindow,
+    // this.onTapSourceInfoWindow,
+    // this.onTapDestinationInfoWindow,
+    // this.onTapDriverInfoWindow,
     this.driverCoordinatesStream,
     this.defaultCameraLocation,
     this.markers = const <Marker>{},
@@ -93,14 +92,14 @@ class CasaGoogleMap extends StatefulWidget {
   /// The destination [LatLng].
   final LatLng? destinationLatLng;
 
-  /// Called every time source [Marker]'s [InfoWindow] is tapped.
-  final void Function(LatLng)? onTapSourceInfoWindow;
+  // /// Called every time source [Marker]'s [InfoWindow] is tapped.
+  // final void Function(LatLng)? onTapSourceInfoWindow;
 
-  /// Called every time destination [Marker]'s [InfoWindow] is tapped.
-  final void Function(LatLng)? onTapDestinationInfoWindow;
+  // /// Called every time destination [Marker]'s [InfoWindow] is tapped.
+  // final void Function(LatLng)? onTapDestinationInfoWindow;
 
-  /// Called every time driver [Marker]'s [InfoWindow] is tapped.
-  final void Function(LatLng)? onTapDriverInfoWindow;
+  // /// Called every time driver [Marker]'s [InfoWindow] is tapped.
+  // final void Function(LatLng)? onTapDriverInfoWindow;
 
   /// Called every time source [Marker] is tapped.
   final void Function(LatLng)? onTapSourceMarker;
@@ -364,9 +363,9 @@ class _CasaGoogleMapState extends State<CasaGoogleMap> {
       onTapSourceMarker: widget.onTapSourceMarker,
       onTapDestinationMarker: widget.onTapDestinationMarker,
       onTapDriverMarker: widget.onTapDriverMarker,
-      onTapSourceInfoWindow: widget.onTapSourceInfoWindow,
-      onTapDestinationInfoWindow: widget.onTapDestinationInfoWindow,
-      onTapDriverInfoWindow: widget.onTapDriverInfoWindow,
+      // onTapSourceInfoWindow: widget.onTapSourceInfoWindow,
+      // onTapDestinationInfoWindow: widget.onTapDestinationInfoWindow,
+      // onTapDriverInfoWindow: widget.onTapDriverInfoWindow,
       driverCoordinatesStream: widget.driverCoordinatesStream,
       routeColor: widget.routeColor,
       routeWidth: widget.routeWidth,

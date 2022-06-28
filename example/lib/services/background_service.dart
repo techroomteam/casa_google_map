@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'package:casa_google_map/casa_google_map.dart';
 import 'package:example/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 
 class BackgroundService {
   final _fBservice = FlutterBackgroundService();
