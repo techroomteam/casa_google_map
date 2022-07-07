@@ -397,19 +397,18 @@ class _CasaGoogleMapState extends State<CasaGoogleMap> {
       mapId: _casaMapVM.mapControllerCompleter.future
           .then<int>((value) => value.mapId), //Grab Google Map Id
       shouldAnimateCamera: false,
-      isActiveTrip: true,
-      rippleRadius: 0.25,
+      // isActiveTrip: true,
       useRotation: false,
       zoom: 15.0,
       duration: const Duration(milliseconds: 2000),
       onStopover: _casaMapVM.onStopMarkerAnimation,
       onMarkerAnimationListener: (marker) {
         if (_casaMapVM.isLocationOnPath) {
-          debugPrint('onMarkerAnimation.....');
-          _casaMapVM.polylineCoordinates[0] =
-              LatLng(marker.position.latitude, marker.position.longitude);
-
           WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+            _casaMapVM.animationStopped = false;
+
+            _casaMapVM.polylineCoordinates[0] =
+                LatLng(marker.position.latitude, marker.position.longitude);
             setState(() {});
           });
         }
