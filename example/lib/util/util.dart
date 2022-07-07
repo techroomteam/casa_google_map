@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
-String mapAPIKey = "AIzaSyDBbi48f3ShdfYYbfCQwFPfwEMsvpFim_g";
+String mapAPIKey = "Google_Map_API_KEY";
 
 const kDefaultDriverMarkerAssetPath = 'assets/images/driver_marker_icon.png';
 

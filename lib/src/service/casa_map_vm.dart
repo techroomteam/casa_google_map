@@ -149,6 +149,9 @@ class CasaMapService {
   // services
   final PermissionService _permissionService = PermissionService();
 
+  int stopCounter = 0;
+  bool animationStopped = true;
+
   /// setting source and destination markers
   void _setSourceDestinationMarkers() async {
     if (_showSourceMarker && _sourceLatLng != null) {
@@ -197,11 +200,8 @@ class CasaMapService {
   /// If [CasaMapViewType.customer] then this method will draw polyline with help of [CasaPosition.route]
   ///
   /// In case of customer we don't need to reroute, we can store driver side data in firebase and display polyline with help of that data
-  Future<void> _buildPolyLines({
-    ///
-    bool ignoreMapType = false,
-    CasaPosition? casaPosition,
-  }) async {
+  Future<void> _buildPolyLines(
+      {bool ignoreMapType = false, CasaPosition? casaPosition}) async {
     // clear coordinates
     polylineCoordinates.clear();
     mapTolkitPolylineCoordinates.clear();
@@ -306,7 +306,6 @@ class CasaMapService {
       _destinationLatLng = casaPos.destinationLatLng;
 
       if (destinationIconNeedToBeSet) {
-        debugPrint("destinationIconNeedToBeSet: $destinationIconNeedToBeSet");
         _setSourceDestinationMarkers();
       }
 
@@ -321,6 +320,7 @@ class CasaMapService {
       if (isLocationOnPath && polylineCoordinates.isNotEmpty) {
         currentSegmentIndex =
             getCurrentLocationSegmentIndex(casaPos.driverLatLng);
+        debugPrint("currentSegmentIndex: $currentSegmentIndex");
         if (currentSegmentIndex > 0) {
           final newLocation = LatLng(polylineCoordinates[1].latitude,
               polylineCoordinates[1].longitude);
@@ -334,6 +334,7 @@ class CasaMapService {
 
         if (shouldCenterPolyline) {
           shouldCenterPolyline = false;
+          debugPrint('Center Polyline');
           await _centerPolyline();
         }
       }
@@ -351,7 +352,11 @@ class CasaMapService {
       if (_onNewCasaPositionListner != null) {
         _onNewCasaPositionListner!(casaPosition);
       }
-      _updateDriverMarker(newDriverLocation);
+
+      debugPrint("animationStopped: $animationStopped");
+      if (animationStopped) {
+        _updateDriverMarker(newDriverLocation);
+      }
     });
   }
 
@@ -360,7 +365,7 @@ class CasaMapService {
     final driverMarker = (await _driverMarkerIcon?.bitmapDescriptor)!;
 
     var markerId = const MarkerId('driver');
-    markers[markerId] = RippleMarker(
+    _markers[markerId] = RippleMarker(
       markerId: markerId,
       icon: driverMarker,
       position: coordinate,
@@ -374,6 +379,7 @@ class CasaMapService {
   ///
   int getCurrentLocationSegmentIndex(LatLng newLocation) {
     var markerInd = 0;
+    debugPrint('polylineCoordinates.length: ${polylineCoordinates.length}');
     for (var i = 0; i < polylineCoordinates.length; i++) {
       int index;
       if (i == polylineCoordinates.length - 1) {
@@ -381,6 +387,7 @@ class CasaMapService {
       } else {
         index = i + 1;
       }
+
       var polylineCoordinateList = <mapTolkit.LatLng>[
         mapTolkit.LatLng(
             polylineCoordinates[i].latitude, polylineCoordinates[i].longitude),
@@ -397,12 +404,14 @@ class CasaMapService {
         break;
       }
     }
+
     return markerInd;
   }
 
   ///
   Future<void> onStopMarkerAnimation(LatLng latLng) async {
-    debugPrint("onStopMarkerAnimation");
+    stopCounter += 1;
+    debugPrint("onStopMarkerAnimation: $stopCounter");
 
     if (!mapControllerCompleter.isCompleted) return;
 
@@ -410,14 +419,22 @@ class CasaMapService {
     if (currentSegmentIndex == 1) {
       polylineCoordinates.removeAt(0);
       currentSegmentIndex -= 1;
+      //
+
+      _updateDriverMarker(nextLocation);
     } else if (currentSegmentIndex > 1) {
       polylineCoordinates.removeAt(0);
       nextLocation = LatLng(
           polylineCoordinates[1].latitude, polylineCoordinates[1].longitude);
       currentSegmentIndex -= 1;
+
+      _updateDriverMarker(nextLocation);
     }
 
-    _updateDriverMarker(nextLocation);
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      animationStopped = true;
+      // debugPrint("animationStopped: $animationStopped");
+    });
   }
 
   /// Initialize all the parameters.
@@ -541,15 +558,6 @@ class CasaMapService {
       }
     }
   }
-
-  //   if (await canLaunchUrl(Uri(path: url))) {
-  //     await launchUrl(Uri(path: url));
-  //   } else if (await canLaunchUrl(Uri(path: urlAppleMaps))) {
-  //     await launchUrl(Uri(path: urlAppleMaps));
-  //   } else {
-  //     throw 'Could not launch $url';
-  //   }
-  // }
 
   // cetner polyline
   Future<void> _centerPolyline() async {
