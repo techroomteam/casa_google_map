@@ -262,17 +262,6 @@ class CasaMapService {
 
     _polylines[id] = polyline;
 
-    // // setting map such as both source and
-    // // destinations markers can be seen
-    // if (result != null) {
-    //   await _mapController?.animateCamera(
-    //     CameraUpdate.newLatLngBounds(result.bounds, 32),
-    //   );
-
-    //   totalDistance = result.totalDistance;
-    //   totalTime = result.totalDuration;
-    // }
-
     _setState(() {});
   }
 
